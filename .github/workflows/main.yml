@@ -1,0 +1,37 @@
+name: Auto Commit README
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "*/10 * * * *" 
+  workflow_dispatch: 
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false # Prevents credential issues
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Update README.md
+        run: |
+          echo "Last updated: $(date -u)" > README.md
+      - name: Commit & Push Changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_ACCESS }}
+        run: |
+          git config --global user.name "rivopelu"
+          git config --global user.email "rivopelu12@gmail.com"
+          git add README.md
+          git commit -m "Auto-update README.md [skip ci]" || exit 0
+          git pull --rebase
+          git push https://x-access-token:${{ secrets.TOKEN_ACCESS }}@github.com/rivopelu/automation-commit.git main
