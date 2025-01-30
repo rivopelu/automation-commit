@@ -45,10 +45,13 @@ jobs:
         run: |
           git config --global user.name "rivopelu"
           git config --global user.email "rivopelu12@gmail.com"
-          
-          # Pull the latest changes from the remote before pushing
-          git pull --rebase
 
+          # Commit changes if any
           git add README.md
-          git commit -m "Auto-update README.md with new date [skip ci]" || exit 0
-          git push https://x-access-token:${{ secrets.TOKEN_ACCESS }}@github.com/rivopelu/automation-commit.git main
+          git commit -m "Auto-update README.md with new date [skip ci]" || echo "No changes to commit"
+
+          # Pull the latest changes from the remote before pushing
+          git pull --rebase || echo "No changes to rebase"
+
+          # Force push changes to the remote repository
+          git push --force https://x-access-token:${{ secrets.TOKEN_ACCESS }}@github.com/rivopelu/automation-commit.git main
