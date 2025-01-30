@@ -5,8 +5,8 @@ on:
     branches:
       - main
   schedule:
-    - cron: "*/30 * * * *" 
-  workflow_dispatch: 
+    - cron: "*/10 * * * *"  # Runs every 10 minutes
+  workflow_dispatch:  # Allows manual execution
 
 jobs:
   commit:
@@ -16,22 +16,39 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          persist-credentials: false # Prevents credential issues
+          persist-credentials: false  # Prevents credential issues
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
+
       - name: Update README.md
         run: |
-          echo "Last updated: $(date -u)" > README.md
+          # Define file path
+          readme_path="README.md"
+          
+          # Check if README.md exists, if not create it
+          if [ ! -f "$readme_path" ]; then
+            echo "# Auto Commit README" > "$readme_path"
+          fi
+
+          # Get current timestamp
+          timestamp=$(date -u)
+
+          # Add the new date to the list in README.md
+          echo "- Last updated: $timestamp" >> "$readme_path"
+
       - name: Commit & Push Changes
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN_ACCESS }}
         run: |
           git config --global user.name "rivopelu"
           git config --global user.email "rivopelu12@gmail.com"
-          git add README.md
-          git commit -m "Auto-update README.md [skip ci]" || exit 0
+          
+          # Pull the latest changes from the remote before pushing
           git pull --rebase
+
+          git add README.md
+          git commit -m "Auto-update README.md with new date [skip ci]" || exit 0
           git push https://x-access-token:${{ secrets.TOKEN_ACCESS }}@github.com/rivopelu/automation-commit.git main
