@@ -1,11 +1,11 @@
-name: Auto Commit README
+name: Auto Commit Counter
 
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: "0 * * * *"  # Runs every 1 hour
+    - cron: "0 * * * *" 
   workflow_dispatch:
 
 jobs:
@@ -23,12 +23,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: Update counter and README.md
+      - name: Update counter.txt only
         run: |
           COUNTER_FILE="counter.txt"
-          README_FILE="README.md"
 
-          # Initialize counter if not exist
+          # Inisialisasi counter jika belum ada
           if [ ! -f "$COUNTER_FILE" ]; then
             echo "1" > "$COUNTER_FILE"
             count=1
@@ -38,11 +37,7 @@ jobs:
             echo "$count" > "$COUNTER_FILE"
           fi
 
-          # Update README.md
-          timestamp=$(date -u)
-          echo "- Commit #$count at $timestamp" >> "$README_FILE"
-
-          # Save commit message to env for next step
+          # Simpan untuk step commit
           echo "NUMBER=$count" >> $GITHUB_ENV
 
       - name: Commit & Push Changes
@@ -52,7 +47,7 @@ jobs:
           git config --global user.name "rivopelu"
           git config --global user.email "rivopelu12@gmail.com"
 
-          git add README.md counter.txt
+          git add counter.txt
           git commit -m "Auto commit #$NUMBER [skip ci]" || echo "No changes to commit"
           git pull --rebase || echo "No changes to rebase"
           git push --force https://x-access-token:${{ secrets.TOKEN_ACCESS }}@github.com/rivopelu/automation-commit.git main
