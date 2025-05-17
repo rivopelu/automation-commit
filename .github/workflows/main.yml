@@ -6,7 +6,7 @@ on:
       - main
   schedule:
     - cron: "0 * * * *"  # Runs every 1 hour
-  workflow_dispatch:  # Allows manual execution
+  workflow_dispatch:
 
 jobs:
   commit:
@@ -16,33 +16,34 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          persist-credentials: false  # Prevents credential issues
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Update README.md with incrementing number
+      - name: Update counter and README.md
         run: |
-          readme_path="README.md"
+          COUNTER_FILE="counter.txt"
+          README_FILE="README.md"
 
-          # Initialize README.md if not exist
-          if [ ! -f "$readme_path" ]; then
-            echo "# Auto Commit README" > "$readme_path"
-            echo "1" >> "$readme_path"
-            echo "NUMBER=1" >> commit.env
+          # Initialize counter if not exist
+          if [ ! -f "$COUNTER_FILE" ]; then
+            echo "1" > "$COUNTER_FILE"
+            count=1
           else
-            # Extract last number (assumed to be the last line)
-            last_number=$(tail -n 1 "$readme_path" | grep -o '[0-9]*')
-            if [ -z "$last_number" ]; then
-              new_number=1
-            else
-              new_number=$((last_number + 1))
-            fi
-            echo "$new_number" >> "$readme_path"
-            echo "NUMBER=$new_number" >> commit.env
+            count=$(cat "$COUNTER_FILE")
+            count=$((count + 1))
+            echo "$count" > "$COUNTER_FILE"
           fi
+
+          # Update README.md
+          timestamp=$(date -u)
+          echo "- Commit #$count at $timestamp" >> "$README_FILE"
+
+          # Save commit message to env for next step
+          echo "NUMBER=$count" >> $GITHUB_ENV
 
       - name: Commit & Push Changes
         env:
@@ -51,12 +52,7 @@ jobs:
           git config --global user.name "rivopelu"
           git config --global user.email "rivopelu12@gmail.com"
 
-          # Load new number
-          source commit.env
-          COMMIT_MSG="Auto commit #$NUMBER"
-
-          git add README.md
-          git commit -m "$COMMIT_MSG [skip ci]" || echo "No changes to commit"
-
+          git add README.md counter.txt
+          git commit -m "Auto commit #$NUMBER [skip ci]" || echo "No changes to commit"
           git pull --rebase || echo "No changes to rebase"
           git push --force https://x-access-token:${{ secrets.TOKEN_ACCESS }}@github.com/rivopelu/automation-commit.git main
