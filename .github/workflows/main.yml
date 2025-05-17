@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 */1 * * *"  # Runs every 10 minutes
+    - cron: "0 * * * *"  # Runs every 1 hour
   workflow_dispatch:  # Allows manual execution
 
 jobs:
@@ -23,21 +23,26 @@ jobs:
         with:
           node-version: 18
 
-      - name: Update README.md
+      - name: Update README.md with incrementing number
         run: |
-          # Define file path
           readme_path="README.md"
-          
-          # Check if README.md exists, if not create it
+
+          # Initialize README.md if not exist
           if [ ! -f "$readme_path" ]; then
             echo "# Auto Commit README" > "$readme_path"
+            echo "1" >> "$readme_path"
+            echo "NUMBER=1" >> commit.env
+          else
+            # Extract last number (assumed to be the last line)
+            last_number=$(tail -n 1 "$readme_path" | grep -o '[0-9]*')
+            if [ -z "$last_number" ]; then
+              new_number=1
+            else
+              new_number=$((last_number + 1))
+            fi
+            echo "$new_number" >> "$readme_path"
+            echo "NUMBER=$new_number" >> commit.env
           fi
-
-          # Get current timestamp
-          timestamp=$(date -u)
-
-          # Add the new date to the list in README.md
-          echo "- Last updated: $timestamp" >> "$readme_path"
 
       - name: Commit & Push Changes
         env:
@@ -46,12 +51,12 @@ jobs:
           git config --global user.name "rivopelu"
           git config --global user.email "rivopelu12@gmail.com"
 
-          # Commit changes if any
+          # Load new number
+          source commit.env
+          COMMIT_MSG="Auto commit #$NUMBER"
+
           git add README.md
-          git commit -m "Auto-update README.md with new date [skip ci]" || echo "No changes to commit"
+          git commit -m "$COMMIT_MSG [skip ci]" || echo "No changes to commit"
 
-          # Pull the latest changes from the remote before pushing
           git pull --rebase || echo "No changes to rebase"
-
-          # Force push changes to the remote repository
           git push --force https://x-access-token:${{ secrets.TOKEN_ACCESS }}@github.com/rivopelu/automation-commit.git main
